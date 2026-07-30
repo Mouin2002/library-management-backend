@@ -1,0 +1,38 @@
+# Virtual Environment
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment Variables
+.env
+
+# Database
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Django
+media/
+staticfiles/
+
+# Logs
+*.log
+
+# Test Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Migrations (optional)
+# **/migrations/*.py
+# !**/migrations/__init__.py
