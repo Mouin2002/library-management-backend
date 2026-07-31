@@ -44,8 +44,16 @@ INSTALLED_APPS = [
     'django_filters',
 
     # Local Apps
-    'apps.authentication',
+    'apps.accounts',
+    'apps.books',
+    'apps.borrow',
+    'apps.common',
+    'apps.dashboard',
+    'apps.fines',
+    'apps.notifications',
+    'apps.visitors',
 ]
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
