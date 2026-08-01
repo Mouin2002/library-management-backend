@@ -9,7 +9,7 @@ class RegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=15)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=UserRole.choices)
+    
 
     def validate_email(self, value):
 
@@ -40,6 +40,8 @@ class RegisterSerializer(serializers.Serializer):
         return attrs
     def create(self, validated_data):
         validated_data.pop("confirm_password")
+
+        validated_data["role"] = UserRole.STUDENT
 
         return AccountService.register_user(validated_data)
 
