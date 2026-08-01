@@ -42,3 +42,33 @@ class RegisterSerializer(serializers.Serializer):
         validated_data.pop("confirm_password")
 
         return AccountService.register_user(validated_data)
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False
+    )
+
+class UserProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "role",
+            "is_verified",
+            "created_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "email",
+            "role",
+            "is_verified",
+            "created_at",
+        ]
