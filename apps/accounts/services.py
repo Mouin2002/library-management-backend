@@ -47,3 +47,18 @@ class AccountService:
             raise ValidationError(
                 {"refresh": "Invalid or expired refresh token."}
             )
+
+    @staticmethod
+    def change_password(user, current_password, new_password):
+
+        if not user.check_password(current_password):
+            raise ValidationError(
+                {
+                    "current_password": "Current password is incorrect."
+                }
+            )
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        return user
