@@ -1,4 +1,4 @@
-from .models import Category
+from .models import Category, Author,Book,BookCopy
 
 
 class CategoryService:
@@ -28,3 +28,103 @@ class CategoryService:
     @staticmethod
     def delete_category(category):
         category.delete()
+
+class AuthorService:
+
+    @staticmethod
+    def get_all_authors():
+        return Author.objects.all().order_by("name")
+
+    @staticmethod
+    def create_author(validated_data):
+        return Author.objects.create(**validated_data)
+
+    @staticmethod
+    def update_author(author, validated_data):
+        for field, value in validated_data.items():
+            setattr(author, field, value)
+
+        author.save()
+
+        return author
+
+    @staticmethod
+    def delete_author(author):
+        author.delete()
+
+class BookService:
+
+    @staticmethod
+    def get_all_books():
+        return (
+            Book.objects
+            .select_related("category")
+            .prefetch_related("authors")
+            .all()
+            .order_by("title")
+        )
+
+    @staticmethod
+    def create_book(validated_data):
+
+        authors = validated_data.pop("authors", [])
+
+        book = Book.objects.create(
+            **validated_data
+        )
+
+        book.authors.set(authors)
+
+        return book
+
+    @staticmethod
+    def update_book(book, validated_data):
+
+        authors = validated_data.pop(
+            "authors",
+            None
+        )
+
+        for field, value in validated_data.items():
+            setattr(book, field, value)
+
+        book.save()
+
+        if authors is not None:
+            book.authors.set(authors)
+
+        return book
+
+    @staticmethod
+    def delete_book(book):
+        book.delete()
+
+
+class BookCopyService:
+
+    @staticmethod
+    def get_all_copies():
+        return (
+            BookCopy.objects
+            .select_related("book")
+            .all()
+            .order_by("accession_number")
+        )
+
+    @staticmethod
+    def create_copy(validated_data):
+        return BookCopy.objects.create(**validated_data)
+
+    @staticmethod
+    def update_copy(book_copy, validated_data):
+
+        for field, value in validated_data.items():
+            setattr(book_copy, field, value)
+
+        book_copy.save()
+
+        return book_copy
+
+    @staticmethod
+    def delete_copy(book_copy):
+        book_copy.delete()
