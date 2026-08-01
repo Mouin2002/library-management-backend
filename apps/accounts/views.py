@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 from .services import AccountService
-from .serializers import RegisterSerializer, LoginSerializer,UserProfileSerializer
+from .serializers import RegisterSerializer, LoginSerializer,UserProfileSerializer,LogoutSerializer
 
 
 class RegisterAPIView(APIView):
@@ -92,4 +92,26 @@ class ProfileAPIView(APIView):
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=LogoutSerializer,
+        description="Logout user and blacklist refresh token",
+    )
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        AccountService.logout_user(
+            serializer.validated_data["refresh"]
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Logout successful."
+            },
+            status=status.HTTP_200_OK
         )

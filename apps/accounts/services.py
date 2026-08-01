@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed,ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from .models import User
 
@@ -36,3 +37,13 @@ class AccountService:
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
+    @staticmethod
+    def logout_user(refresh_token):
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+        except TokenError:
+            raise ValidationError(
+                {"refresh": "Invalid or expired refresh token."}
+            )

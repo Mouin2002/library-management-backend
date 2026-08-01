@@ -72,3 +72,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "is_verified",
             "created_at",
         ]
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
