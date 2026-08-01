@@ -93,6 +93,55 @@ class ProfileAPIView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(
+        request=UserProfileSerializer,
+        responses={200: UserProfileSerializer},
+        description="Update logged-in user profile",
+    )
+    def put(self, request):
+
+        serializer = UserProfileSerializer(
+            request.user,
+            data=request.data,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Profile updated successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=UserProfileSerializer,
+        responses={200: UserProfileSerializer},
+        description="Partially update logged-in user profile",
+    )
+    def patch(self, request):
+
+        serializer = UserProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Profile updated successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
 

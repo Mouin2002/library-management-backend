@@ -63,6 +63,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "role",
             "is_verified",
             "created_at",
+            "updated_at",
         ]
 
         read_only_fields = [
@@ -71,6 +72,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "role",
             "is_verified",
             "created_at",
+            "updated_at",   
         ]
 
 class LogoutSerializer(serializers.Serializer):
