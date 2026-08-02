@@ -17,6 +17,8 @@ from .serializers import (
     BorrowBookSerializer,
     BorrowRecordSerializer,
     ReturnBookSerializer,
+    StudentSerializer,
+    StudentBorrowReportSerializer
 )
 from .services import BorrowService
 
@@ -208,6 +210,85 @@ class OverdueBorrowAPIView(APIView):
             {
                 "success": True,
                 "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class StudentListAPIView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminOrLibrarian,
+    ]
+
+    @extend_schema(
+        responses={
+            200: StudentSerializer(many=True)
+        },
+        description="Get all library students",
+    )
+    def get(self, request):
+
+        students = BorrowService.get_students()
+
+        serializer = StudentSerializer(
+            students,
+            many=True
+        )
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class StudentBorrowReportAPIView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminOrLibrarian,
+    ]
+
+    @extend_schema(
+        responses={
+            200: StudentBorrowReportSerializer
+        },
+        description="Get complete borrowing report for a student",
+    )
+    def get(self, request, user_id):
+
+        report = BorrowService.get_student_borrow_report(
+            user_id
+        )
+
+        data = {
+            "student": StudentSerializer(
+                report["student"]
+            ).data,
+
+            "active_books": BorrowRecordSerializer(
+                report["active_books"],
+                many=True
+            ).data,
+
+            "overdue_books": BorrowRecordSerializer(
+                report["overdue_books"],
+                many=True
+            ).data,
+
+            "history": BorrowRecordSerializer(
+                report["history"],
+                many=True
+            ).data,
+        }
+
+        return Response(
+            {
+                "success": True,
+                "data": data,
             },
             status=status.HTTP_200_OK,
         )

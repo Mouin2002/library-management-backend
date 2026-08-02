@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
-
+from apps.accounts.models import User
 from rest_framework.exceptions import ValidationError
 
 from apps.books.models import BookCopy
@@ -309,3 +309,59 @@ class BorrowService:
             )
             .order_by("due_date")
         )
+
+    @staticmethod
+    def get_students():
+
+        return (
+            User.objects
+            .filter(role="STUDENT")
+            .order_by("first_name", "last_name")
+            )
+
+
+    @staticmethod
+    def get_student_borrow_report(user_id):
+
+        try:
+            student = User.objects.get(
+                id=user_id,
+                role="STUDENT"
+            )
+
+        except User.DoesNotExist:
+            raise ValidationError(
+                {
+                    "student": "Student not found."
+                }
+            )
+
+        history = (
+            BorrowRecord.objects
+            .filter(user=student)
+            .select_related(
+                "book_copy",
+                "book_copy__book",
+            )
+            .order_by("-borrowed_at")
+        )
+
+        active_books = history.filter(
+            returned_at__isnull=True,
+            status__in=[
+                BorrowRecord.Status.BORROWED,
+                BorrowRecord.Status.OVERDUE,
+            ],
+        )
+
+        overdue_books = history.filter(
+            returned_at__isnull=True,
+            due_date__lt=timezone.now(),
+        )
+
+        return {
+            "student": student,
+            "history": history,
+            "active_books": active_books,
+            "overdue_books": overdue_books,
+        }

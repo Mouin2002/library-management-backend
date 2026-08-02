@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import BorrowBookAPIView,MyBorrowRecordsAPIView,MyActiveBorrowsAPIView,ReturnBookAPIView,PendingBorrowAPIView,OverdueBorrowAPIView
-
+from .views import BorrowBookAPIView,MyBorrowRecordsAPIView,MyActiveBorrowsAPIView,ReturnBookAPIView,PendingBorrowAPIView,OverdueBorrowAPIView,StudentListAPIView,StudentBorrowReportAPIView
 
 urlpatterns = [
     path(
@@ -36,5 +35,16 @@ urlpatterns = [
     "overdue/",
     OverdueBorrowAPIView.as_view(),
     name="overdue-borrows",
+    ),
+    path(
+    "students/",
+    StudentListAPIView.as_view(),
+    name="student-list",
+    ),
+
+    path(
+    "students/<int:user_id>/",
+    StudentBorrowReportAPIView.as_view(),
+    name="student-borrow-report",
     ),
 ]

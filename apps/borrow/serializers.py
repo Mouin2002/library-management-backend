@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from apps.books.models import BookCopy
 from .models import BorrowRecord
-
+from apps.accounts.models import User
 
 class BorrowBookSerializer(serializers.Serializer):
     book_copy = serializers.PrimaryKeyRelatedField(
@@ -56,4 +56,32 @@ class BorrowRecordSerializer(serializers.ModelSerializer):
 class ReturnBookSerializer(serializers.Serializer):
     borrow_record_id = serializers.IntegerField(
         min_value=1
+    )
+class StudentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+        ]
+
+class StudentBorrowReportSerializer(serializers.Serializer):
+
+    student = StudentSerializer()
+
+    active_books = BorrowRecordSerializer(
+        many=True
+    )
+
+    overdue_books = BorrowRecordSerializer(
+        many=True
+    )
+
+    history = BorrowRecordSerializer(
+        many=True
     )
