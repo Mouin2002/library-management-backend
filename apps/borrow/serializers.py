@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from django.utils import timezone
 from apps.books.models import BookCopy
 from .models import BorrowRecord
 
@@ -11,6 +11,13 @@ class BorrowBookSerializer(serializers.Serializer):
 
     due_date = serializers.DateTimeField()
 
+    def validate_due_date(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError(
+                "Due date must be in the future."
+            )
+
+        return value
 
 class BorrowRecordSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(
