@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -5,22 +7,21 @@ from rest_framework.exceptions import ValidationError
 
 from apps.books.models import BookCopy
 
+# BorrowRecord comes from apps/borrow/models.py
 from .models import BorrowRecord
 
 
 class BorrowService:
 
     # =========================================================
-    # BORROW / ISSUE BOOK
+    # ISSUE / BORROW BOOK
     # =========================================================
 
     @staticmethod
     @transaction.atomic
     def borrow_book(user, book_copy, due_date):
 
-        # Lock the physical copy while processing the request.
-        # This helps prevent two users borrowing the same copy
-        # at exactly the same time.
+        # Lock this physical copy during the transaction
         book_copy = (
             BookCopy.objects
             .select_for_update()
@@ -28,10 +29,7 @@ class BorrowService:
             .get(id=book_copy.id)
         )
 
-        # -----------------------------------------------------
-        # 1. Check whether the physical copy is available
-        # -----------------------------------------------------
-
+        # 1. Book copy must be available
         if book_copy.status != BookCopy.Status.AVAILABLE:
             raise ValidationError(
                 {
@@ -40,10 +38,7 @@ class BorrowService:
                 }
             )
 
-        # -----------------------------------------------------
-        # 2. Maximum 3 active books per student
-        # -----------------------------------------------------
-
+        # 2. Student can have maximum 3 active books
         active_borrow_count = (
             BorrowRecord.objects
             .filter(
@@ -66,10 +61,8 @@ class BorrowService:
                 }
             )
 
-        # -----------------------------------------------------
-        # 3. Prevent same student borrowing same book twice
-        # -----------------------------------------------------
-
+        # 3. Student cannot borrow another copy
+        # of the same book while already holding one
         already_borrowed = (
             BorrowRecord.objects
             .filter(
@@ -93,10 +86,7 @@ class BorrowService:
                 }
             )
 
-        # -----------------------------------------------------
         # 4. Create borrow record
-        # -----------------------------------------------------
-
         borrow_record = BorrowRecord.objects.create(
             user=user,
             book_copy=book_copy,
@@ -104,11 +94,7 @@ class BorrowService:
             status=BorrowRecord.Status.BORROWED,
         )
 
-        # -----------------------------------------------------
-        # 5. Change physical copy status
-        # AVAILABLE -> BORROWED
-        # -----------------------------------------------------
-
+        # 5. Change physical copy to BORROWED
         book_copy.status = BookCopy.Status.BORROWED
 
         book_copy.save(
@@ -121,7 +107,7 @@ class BorrowService:
         return borrow_record
 
     # =========================================================
-    # GET STUDENT COMPLETE BORROW HISTORY
+    # STUDENT - COMPLETE BORROW HISTORY
     # =========================================================
 
     @staticmethod
@@ -138,7 +124,7 @@ class BorrowService:
         )
 
     # =========================================================
-    # GET STUDENT ACTIVE BORROWED BOOKS
+    # STUDENT - CURRENTLY BORROWED BOOKS
     # =========================================================
 
     @staticmethod
@@ -169,10 +155,14 @@ class BorrowService:
     @transaction.atomic
     def return_book(user, borrow_record_id):
 
+        # Find and lock the student's borrow record
         borrow_record = (
             BorrowRecord.objects
             .select_for_update()
-            .select_related("book_copy")
+            .select_related(
+                "book_copy",
+                "book_copy__book",
+            )
             .filter(
                 id=borrow_record_id,
                 user=user,
@@ -180,7 +170,7 @@ class BorrowService:
             .first()
         )
 
-        # Borrow record doesn't exist for this user
+        # Borrow record doesn't exist
         if borrow_record is None:
             raise ValidationError(
                 {
@@ -201,28 +191,55 @@ class BorrowService:
                 }
             )
 
-        # -----------------------------------------------------
-        # Update BorrowRecord
-        # -----------------------------------------------------
+        # Current return time
+        return_time = timezone.now()
 
-        borrow_record.status = (
-            BorrowRecord.Status.RETURNED
-        )
+        borrow_record.returned_at = return_time
+        borrow_record.status = BorrowRecord.Status.RETURNED
 
-        borrow_record.returned_at = timezone.now()
+        # =====================================================
+        # CALCULATE OVERDUE FINE
+        # ₹10 PER LATE DAY
+        # =====================================================
 
+        if return_time > borrow_record.due_date:
+
+            overdue_duration = (
+                return_time - borrow_record.due_date
+            )
+
+            overdue_days = overdue_duration.days
+
+            # Example:
+            # 1 day + 2 hours late = 2 fine days
+            if overdue_duration.seconds > 0:
+                overdue_days += 1
+
+            fine_per_day = Decimal("10.00")
+
+            borrow_record.fine_amount = (
+                Decimal(overdue_days)
+                * fine_per_day
+            )
+
+        else:
+
+            # Returned on time
+            borrow_record.fine_amount = Decimal("0.00")
+
+        # Save borrow record
         borrow_record.save(
             update_fields=[
                 "status",
                 "returned_at",
+                "fine_amount",
                 "updated_at",
             ]
         )
 
-        # -----------------------------------------------------
-        # Make physical copy available again
-        # BORROWED -> AVAILABLE
-        # -----------------------------------------------------
+        # =====================================================
+        # MAKE BOOK COPY AVAILABLE AGAIN
+        # =====================================================
 
         book_copy = borrow_record.book_copy
 
@@ -238,7 +255,7 @@ class BorrowService:
         return borrow_record
 
     # =========================================================
-    # ADMIN/LIBRARIAN - PENDING RETURNS
+    # ADMIN / LIBRARIAN - PENDING RETURNS
     # =========================================================
 
     @staticmethod
@@ -262,7 +279,7 @@ class BorrowService:
         )
 
     # =========================================================
-    # ADMIN/LIBRARIAN - OVERDUE BOOKS
+    # ADMIN / LIBRARIAN - OVERDUE BOOKS
     # =========================================================
 
     @staticmethod
@@ -270,7 +287,7 @@ class BorrowService:
 
         now = timezone.now()
 
-        # Convert expired BORROWED records to OVERDUE
+        # Change expired BORROWED records to OVERDUE
         BorrowRecord.objects.filter(
             status=BorrowRecord.Status.BORROWED,
             due_date__lt=now,
