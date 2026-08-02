@@ -29,5 +29,14 @@ urlpatterns = [
     path(
     "api/books/",
     include("apps.books.urls")
-),
+    ),
+    path(
+    "api/borrow/",
+    include("apps.borrow.urls")
+    ),
+
+    path(
+    "api/visitors/",
+    include("apps.visitors.urls")
+    ),
 ]
