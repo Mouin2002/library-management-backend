@@ -39,4 +39,8 @@ urlpatterns = [
     "api/visitors/",
     include("apps.visitors.urls")
     ),
+    path(
+    "api/dashboard/",
+    include("apps.dashboard.urls")
+    ),
 ]
