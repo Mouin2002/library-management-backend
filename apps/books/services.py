@@ -1,5 +1,5 @@
 from .models import Category, Author,Book,BookCopy
-
+from django.db import models
 
 class CategoryService:
 
@@ -55,14 +55,47 @@ class AuthorService:
 class BookService:
 
     @staticmethod
-    def get_all_books():
-        return (
+    def get_all_books(
+        search=None,
+        category=None,
+        author=None,
+        available=None,
+    ):
+        books = (
             Book.objects
             .select_related("category")
-            .prefetch_related("authors")
+            .prefetch_related("authors", "copies")
             .all()
-            .order_by("title")
         )
+
+        if search:
+            books = books.filter(
+                models.Q(title__icontains=search)
+                |models.Q(isbn__icontains=search)
+                |models.Q(publisher__icontains=search)
+            )
+
+        if category:
+            books = books.filter(
+                category_id=category
+            )
+
+        if author:
+            books = books.filter(
+                authors__id=author
+            )
+
+        if available is True:
+            books = books.filter(
+                copies__status=BookCopy.Status.AVAILABLE
+            )
+
+        if available is False:
+            books = books.exclude(
+                copies__status=BookCopy.Status.AVAILABLE
+            )
+
+        return books.distinct().order_by("title")
 
     @staticmethod
     def create_book(validated_data):

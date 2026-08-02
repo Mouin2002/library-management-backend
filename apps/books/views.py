@@ -3,8 +3,8 @@ from django.shortcuts import render
 # Create your views here.
 from django.shortcuts import get_object_or_404
 
-from drf_spectacular.utils import extend_schema
-
+from drf_spectacular.utils import extend_schema,OpenApiParameter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -306,27 +306,88 @@ class AuthorDetailAPIView(APIView):
 
 class BookListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
     @extend_schema(
-        responses={200: BookSerializer(many=True)},
-        description="Get all books",
+    parameters=[
+        OpenApiParameter(
+            name="search",
+            type=str,
+            description="Search by title, ISBN or publisher",
+        ),
+        OpenApiParameter(
+            name="category",
+            type=int,
+            description="Filter by category ID",
+        ),
+        OpenApiParameter(
+            name="author",
+            type=int,
+            description="Filter by author ID",
+        ),
+        OpenApiParameter(
+            name="available",
+            type=bool,
+            description="Filter by availability",
+        ),
+        OpenApiParameter(
+            name="page",
+            type=int,
+            description="Page number",
+        ),
+    ],
+    responses={200: BookSerializer(many=True)},
     )
     def get(self, request):
+        search = request.query_params.get("search")
+        category = request.query_params.get("category")
+        author = request.query_params.get("author")
+        available = request.query_params.get("available")
 
-        books = BookService.get_all_books()
+        if available is not None:
+            available = available.lower() == "true"
+
+        books = BookService.get_all_books(
+            search=search,
+            category=category,
+            author=author,
+            available=available,
+        )
+
+        paginator = PageNumberPagination()
+
+        page = paginator.paginate_queryset(
+            books,
+            request,
+            view=self
+        )
 
         serializer = BookSerializer(
-            books,
+            page,
             many=True
         )
 
-        return Response(
-            {
-                "success": True,
-                "data": serializer.data
-            },
-            status=status.HTTP_200_OK
+        return paginator.get_paginated_response(
+            serializer.data
         )
+        @extend_schema(
+            responses={200: BookSerializer(many=True)},
+            description="Get all books",
+        )
+        def get(self, request):
+
+            books = BookService.get_all_books()
+
+            serializer = BookSerializer(
+                books,
+                many=True
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
 
     @extend_schema(
         request=BookSerializer,
