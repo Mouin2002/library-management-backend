@@ -265,9 +265,11 @@ class StudentBorrowReportAPIView(APIView):
         )
 
         data = {
-            "student": StudentSerializer(
+                "student": StudentSerializer(
                 report["student"]
             ).data,
+
+            "summary": report["summary"],
 
             "active_books": BorrowRecordSerializer(
                 report["active_books"],
@@ -284,7 +286,6 @@ class StudentBorrowReportAPIView(APIView):
                 many=True
             ).data,
         }
-
         return Response(
             {
                 "success": True,

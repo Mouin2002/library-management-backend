@@ -70,9 +70,26 @@ class StudentSerializer(serializers.ModelSerializer):
             "phone_number",
         ]
 
+class StudentBorrowSummarySerializer(serializers.Serializer):
+
+    total_borrowed = serializers.IntegerField()
+
+    currently_borrowed = serializers.IntegerField()
+
+    overdue = serializers.IntegerField()
+
+    returned = serializers.IntegerField()
+
+    total_fines = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
 class StudentBorrowReportSerializer(serializers.Serializer):
 
     student = StudentSerializer()
+
+    summary = StudentBorrowSummarySerializer()
 
     active_books = BorrowRecordSerializer(
         many=True

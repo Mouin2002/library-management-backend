@@ -359,9 +359,33 @@ class BorrowService:
             due_date__lt=timezone.now(),
         )
 
+        total_borrowed = history.count()
+
+        currently_borrowed = active_books.count()
+
+        overdue_count = overdue_books.count()
+
+        returned_count = history.filter(
+            status=BorrowRecord.Status.RETURNED
+        ).count()
+
+        total_fines = sum(
+            record.fine_amount
+            for record in history
+        )
+
         return {
             "student": student,
-            "history": history,
+
+            "summary": {
+                "total_borrowed": total_borrowed,
+                "currently_borrowed": currently_borrowed,
+                "overdue": overdue_count,
+                "returned": returned_count,
+                "total_fines": total_fines,
+            },
+
             "active_books": active_books,
             "overdue_books": overdue_books,
+            "history": history,
         }
