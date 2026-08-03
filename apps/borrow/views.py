@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 from drf_spectacular.utils import extend_schema
-
+from apps.common.responses import success_response  
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -48,15 +48,12 @@ class BorrowBookAPIView(APIView):
             due_date=serializer.validated_data["due_date"],
         )
 
-        return Response(
-            {
-                "success": True,
-                "message": "Book borrowed successfully.",
-                "data": BorrowRecordSerializer(
-                    borrow_record
-                ).data,
-            },
-            status=status.HTTP_201_CREATED,
+        return success_response(
+            data=BorrowRecordSerializer(
+                borrow_record
+            ).data,
+            message="Book borrowed successfully.",
+            status_code=status.HTTP_201_CREATED,
         )
 
 class MyBorrowRecordsAPIView(APIView):
