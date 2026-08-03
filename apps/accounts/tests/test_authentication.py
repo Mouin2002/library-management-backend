@@ -128,12 +128,12 @@ class LoginAPITest(APITestCase):
 
         self.assertIn(
             "access",
-            response.data,
+            response.data["data"],
         )
 
         self.assertIn(
             "refresh",
-            response.data,
+            response.data["data"],
         )
 
     def test_login_with_wrong_password_fails(self):
@@ -151,5 +151,5 @@ class LoginAPITest(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_401_UNAUTHORIZED,
         )
